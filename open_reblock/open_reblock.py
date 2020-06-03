@@ -23,7 +23,7 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QFileDialog
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox
 #from qgis.core import QgsProject 
 
 # Initialize Qt resources from file resources.py
@@ -34,7 +34,53 @@ import os.path
 from qgis.core import QgsProject
 
 import sys 
-import qgis_reblock 
+from .qgis_reblock import make_qgis_reblock_layers
+from qgis.core import QgsVectorLayer, QgsProject, QgsField, QgsGeometry, QgsFeature, QgsExpression, QgsFeatureRequest
+
+from typing import List 
+
+HELP_MESSAGES = {
+    'parcel': "The parcel layer defines the set of all possible paths which may be chosen for reblocking. \nThis includes current streets as well as potential new streets.",
+    'building': "The building layer is all polygon building footprints.",
+    'road': "[Optional] This layer is all existing roads.\nThese roads will then be assigned weight = 0 when estimating the optimal reblocking path",
+    "target_block": "[Optional] This value defaults to 'All' meaning that each and every block will be reblocked. However, the user can select a specific block ID if they wish to only process a single particular block.", 
+    'id_col': "Because we reblock each block independently, we need to have an attribute in both the parcel, building, and block geometry that identifies a given block, so we know how to map a given set of buildings to a block. This defaults to 'block_id' because that is used in the original Million Neighborhoods analysis.", 
+    'name': "The name of the new reblock layer"
+}
+
+TITLES = {
+    'parcel': "Parcel Layer Help:",
+    'building': "Building Layer Help:",
+    'road': "[Optional] Existing Road Layer Help:",
+    "target_block": 'Target Block Help:',
+    'id_col': 'Block Identifier Column Name Help:',
+    'name': "Output Name Help:"    
+}
+
+def get_blocks(parcel_layer: QgsVectorLayer, id_col: str) -> List[str]:
+    
+    block_list = [ft[id_col] for ft in parcel_layer.getFeatures()]
+    return block_list
+
+def showdialog(title: str, help_message: str):
+   msg = QMessageBox()
+   #msg.setIcon(QMessageBox.Information)
+
+   #msg.setText("This is a message box")
+   msg.setText(help_message)
+   #msg.setInformativeText("This is additional information")
+   #msg.setWindowTitle("MessageBox demo")
+   msg.setWindowTitle(title)
+   #msg.setDetailedText("The details are as follows:")
+   #msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+   msg.setStandardButtons(QMessageBox.Ok)
+   msg.buttonClicked.connect(msgbtn)
+    
+   retval = msg.exec_()
+    
+def msgbtn(i):
+   print("Button pressed is: {}".format(i.text()))
+
 
 class OpenReblock:
     """QGIS Plugin Implementation."""
@@ -189,6 +235,9 @@ class OpenReblock:
             self.iface.removeToolBarIcon(action)
 
 
+    # def help_display(self):
+    #     QMessageBox                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -198,7 +247,25 @@ class OpenReblock:
         if self.first_start == True:
             self.first_start = False
             self.dlg = OpenReblockDialog()
-            #self.dlg.pushButton.clicked.connect(self.self.select_output_file)
+
+            parcel_help_fn = lambda : showdialog(TITLES['parcel'], HELP_MESSAGES['parcel'])
+            self.dlg.helpButton_parcel.clicked.connect(parcel_help_fn)
+
+            building_help_fn = lambda : showdialog(TITLES['building'], HELP_MESSAGES['building'])
+            self.dlg.helpButton_building.clicked.connect(building_help_fn)
+
+            road_help_fn = lambda : showdialog(TITLES['road'], HELP_MESSAGES['road'])
+            self.dlg.helpButton_road.clicked.connect(road_help_fn)
+
+            target_block_help_fn = lambda : showdialog(TITLES['target_block'], HELP_MESSAGES['target_block'])
+            self.dlg.helpButton_target_block.clicked.connect(target_block_help_fn)
+            
+            name_help_fn = lambda : showdialog(TITLES['name'], HELP_MESSAGES['name'])
+            self.dlg.helpButton_name.clicked.connect(name_help_fn)
+
+            id_col_help_fn = lambda :showdialog(TITLES['id_col'], HELP_MESSAGES['id_col'])
+            self.dlg.helpButton_id_col.clicked.connect(id_col_help_fn)
+            
 
         # Populate our combo boxes to choose the input layers
         layers = QgsProject.instance().layerTreeRoot().children()
@@ -217,9 +284,18 @@ class OpenReblock:
         # Get the output name
         self.dlg.plainTextEdit_outname.clear()
 
-        
+        # Get the output name
+        self.dlg.plainTextEdit_target_block.setPlainText('All')
+
+        # Set the id_col
+        if self.dlg.plainTextEdit_id_col.toPlainText() != '':
+            print('Already set')
+        else:
+            self.dlg.plainTextEdit_id_col.setPlainText('block_id')
+
         # show the dialog
         self.dlg.show()
+
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
@@ -234,7 +310,7 @@ class OpenReblock:
             building_index = self.dlg.comboBox_buildings.currentIndex()
             building_layer = layers[building_index].layer()
 
-            # And the parcel layer
+            # # And the parcel layer
             parcel_index = self.dlg.comboBox_parcels.currentIndex()
             parcel_layer = layers[parcel_index].layer()
 
@@ -244,11 +320,17 @@ class OpenReblock:
             if block_layer is not None:
                 block_layer = block_layer.layer()
 
+            # ID COl
+            id_col = self.dlg.plainTextEdit_id_col.toPlainText()
+
             output_layer_name = self.dlg.plainTextEdit_outname.toPlainText()
+            target_block = self.dlg.plainTextEdit_target_block.toPlainText()
+            all_blocks = get_blocks(parcel_layer, id_col)
+            target_block_list = [target_block] if target_block != 'All' else all_blocks
             #print(output_layer_name)
 
-            id_col = "block_id"
-            qgis_reblock.make_qgis_reblock_layers(building_layer, parcel_layer, block_layer, id_col, output_layer_name)
+            make_qgis_reblock_layers(building_layer, parcel_layer, target_block_list,
+                                  block_layer, id_col, output_layer_name)
 
                 # # write header
                 # line = ",".join(name for name in fieldnames) + "\n"
@@ -258,10 +340,10 @@ class OpenReblock:
                 #   line = ','.join(str(f[name]) for name in fieldnames) + "\n"
                 #   output_file.write(line)
 
-layers = QgsProject.instance().layerTreeRoot().children()
-layer_names = [layer.name() for layer in layers]
-building_layer = layers[2].layer()
-parcel_layer = layers[1].layer()
-block_layer = None
-id_col = 'block_id'
-output_layer_name = 'test_out'
+# layers = QgsProject.instance().layerTreeRoot().children()
+# layer_names = [layer.name() for layer in layers]
+# building_layer = layers[2].layer()
+# parcel_layer = layers[1].layer()
+# block_layer = None
+# id_col = 'block_id'
+# output_layer_name = 'test_out'

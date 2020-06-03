@@ -1,20 +1,40 @@
 
-PRCLZ_PATH = "/home/cooper/Documents/chicago_urban/mnp/cooper_prclz"
+PRCLZ_PATH = "/home/cooper/Documents/chicago_urban/mnp/cooper_prclz/"
+from pathlib import Path 
+
+#PRCLZ_PATH = Path(PRCLZ_PATH) / "prclz"
 import sys 
 sys.path.insert(0, PRCLZ_PATH)
-
-from i_reblock import *
-import i_topology_utils
+PRCLZ_PATH = Path(PRCLZ_PATH) / "prclz"
+sys.path.insert(0, str(PRCLZ_PATH))
+# Import reblocking utils
+from prclz.i_reblock import *
+from prclz.i_topology_utils import *
+# from i_reblock import *
+# import i_topology_utils
 
 from shapely.wkt import loads  
 from qgis.PyQt.QtCore import QVariant
-from qgis._core import QgsVectorLayer
-from qgis.core import QgsProject, QgsField, QgsGeometry, QgsFeature, QgsExpression, QgsFeatureRequest
+#from qgis._core import QgsVectorLayer
+from shapely.geometry import MultiPolygon, MultiPoint
+from typing import List, Union
+
+from qgis.core import QgsVectorLayer, QgsProject, QgsField, QgsGeometry, QgsFeature, QgsExpression, QgsFeatureRequest
 from qgis.PyQt.QtCore import QVariant
  
+def check_layer_has_block_field(qgis_layer: QgsVectorLayer, 
+                                  block_id: str) -> bool:
+    '''
+    Check whether or not the block_id field name is present
+    in the current QGIS layer
+    '''
+    for f in qgis_layer.fields():
+        if f.name() == "block_id":
+            return True 
+    return False 
 
 # create layer
-def shapely_geom_to_layer(geom, layer_name='Reblocking'):
+def shapely_geom_to_layer(geom: MultiPolygon, layer_name='Reblocking'):
     '''
     NOTE: assumes geom is MultiPolygon
     resulting from Steiner algorithm
@@ -41,12 +61,12 @@ def shapely_geom_to_layer(geom, layer_name='Reblocking'):
     return vl 
 
 
-def multipoint_to_point_list(multipoint):
+def multipoint_to_point_list(multipoint: MultiPoint):
 
     point_list = [list(point.coords) for point in multipoint]
     return [x[0] for x in point_list]
 
-def do_reblock(parcel_geom, building_list, block_geom=None):
+def do_reblock(parcel_geom, building_list: List, block_geom=None):
     '''
     Sipmle reblocking for a single block
 
@@ -63,12 +83,12 @@ def do_reblock(parcel_geom, building_list, block_geom=None):
     return new_steiner, existing_steiner
 
 
-def get_geom_from_qgis_layer(qgis_layer, block_id):
+def get_geom_from_qgis_layer(qgis_layer: QgsVectorLayer, 
+                               block_id: str) -> Union[MultiPoint, MultiPolygon, MultiLineString]:
     '''
     Get's features from layer, then gets geom, then converts
     to wkt, then to shapely
     '''
-    #exp = QgsExpression('location_name ILIKE \'%Lake%\'')
     exp_str = "block_id ILIKE \'{}\'".format(block_id)
     exp = QgsExpression(exp_str)
     #exp = QgsExpression('gadm_code ILIKE \'%DJI.1.1_1%\'')
@@ -77,7 +97,7 @@ def get_geom_from_qgis_layer(qgis_layer, block_id):
     all_geoms = [loads(f.geometry().asWkt()) for f in features]
     return all_geoms 
 
-def get_bulding_inputs(building_layer, block_id):
+def get_bulding_inputs(building_layer: QgsVectorLayer, block_id: str) -> MultiPoint:
     '''
     Extracts the inputs from the QGIS building_layer in shapely format
     so that we can run reblocking
@@ -107,7 +127,7 @@ def get_bulding_inputs(building_layer, block_id):
         building_centroids = MultiPoint(building_centroids)
     return building_centroids
 
-def get_parcel_inputs(parcel_layer, block_id):
+def get_parcel_inputs(parcel_layer: QgsVectorLayer, block_id: str) -> MultiLineString:
     '''
     Extracts the inputs from the QGIS parcels_layer in shapely format
     so that we can run reblocking
@@ -129,7 +149,8 @@ def get_parcel_inputs(parcel_layer, block_id):
         print("parcel type is {}".format(type(parcel)))
     return parcel_multilinestring
 
-def make_qgis_reblock_layers(building_layer, parcel_layer, 
+def make_qgis_reblock_layers(building_layer: QgsVectorLayer, parcel_layer: QgsVectorLayer, 
+                             target_block_list: List[str],
                              block_layer=None, id_col='block_id', output_layer_name="reblock"):
     '''
     Main reblocking function to be called from QGIS plugin.
@@ -140,15 +161,23 @@ def make_qgis_reblock_layers(building_layer, parcel_layer,
         - parcel_layer: (QGIS layer) parcels
         - id_col: (str) name of feature column which identifies the unit of a
                         analysis to match buildings and parcels
-    '''
-    BOOM 
+    ''' 
 
     # TO-DO: can this be accessed w/o for-loop?
-    block_set = {ft['block_id'] for ft in parcel_layer.getFeatures()}
-    block_list = list(block_set)
+    # block_set = {ft[id_col] for ft in parcel_layer.getFeatures()}
+    # block_list = list(block_set)
+    block_list = target_block_list
 
     new_steiner_geoms = []
     existing_steiner_geoms = []
+
+    # Check
+    for qgis_layer in [building_layer, parcel_layer]:
+        has_block_field = check_layer_has_block_field(qgis_layer, id_col)
+        assert has_block_field, "ERROR: layer {} does not have field {}, which is needed to map the geometries to a specific block".format(qgis_layer.name(), id_col)
+    if block_layer is not None:
+        assert check_layer_has_block_field(block_layer, id_col), "ERROR: layer {} does not have field {}, which is needed to map the geometries to a specific block".format(block_layer.name(), id_col)
+
 
     print("in qgis_reblock: block count = {}".format(len(block_list)))
 
@@ -158,6 +187,7 @@ def make_qgis_reblock_layers(building_layer, parcel_layer,
         # (1) Get buildings
         building_centroids = get_bulding_inputs(building_layer, block_id)
         if building_centroids is None:
+            print("centroids is none...")
             continue 
         building_list = multipoint_to_point_list(building_centroids)
 
