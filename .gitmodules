@@ -1,0 +1,3 @@
+[submodule "open_reblock/prclz"]
+	path = open_reblock/prclz
+	url = https://github.com/CooperNederhood/cooper_prclz.git
