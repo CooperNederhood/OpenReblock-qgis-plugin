@@ -53,6 +53,13 @@ Let's bring the building footprints back in, and you can see that buildings whic
 
 ![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_3.png "Title")
 
+Finally, let's bring back in the parcel boundaries. You can see that the reblock proposals in red are a subset of the total parcel boundaries, because the algorithm estimates the least-cost (in terms of distance) option.
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_4.png "Title")
+
+## Final thoughts
+The above example used building footprints available through OpenStreetMap. The parcels are generated through R and it not yet available in the plugin but it may be in the future. However, we hope that this tool can be used primarily to facilitate people to analyze data that they already have so that it can be a tool for planners. There are many shortcomings to this approach, and we hope this can be a tool for planners rather than something to replace their important efforts. Finally, this is in development so please let us know if you encounter any bugs.
+
 
 
 
