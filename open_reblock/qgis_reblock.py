@@ -1,17 +1,16 @@
-
-PRCLZ_PATH = "/home/cooper/Documents/chicago_urban/mnp/cooper_prclz/"
 from pathlib import Path 
 
-#PRCLZ_PATH = Path(PRCLZ_PATH) / "prclz"
 import sys 
-sys.path.insert(0, PRCLZ_PATH)
+
+ROOT = Path(__file__).resolve().parent
+PRCLZ_PATH = ROOT / "prclz"
+
+sys.path.insert(0, str(PRCLZ_PATH))
 PRCLZ_PATH = Path(PRCLZ_PATH) / "prclz"
 sys.path.insert(0, str(PRCLZ_PATH))
 # Import reblocking utils
 from prclz.i_reblock import *
 from prclz.i_topology_utils import *
-# from i_reblock import *
-# import i_topology_utils
 
 from shapely.wkt import loads  
 from qgis.PyQt.QtCore import QVariant
@@ -21,6 +20,10 @@ from typing import List, Union
 
 from qgis.core import QgsVectorLayer, QgsProject, QgsField, QgsGeometry, QgsFeature, QgsExpression, QgsFeatureRequest
 from qgis.PyQt.QtCore import QVariant
+
+import logging 
+logger = logging.getLogger('reblock_application')
+logger.setLevel(logging.DEBUG)
  
 def check_layer_has_block_field(qgis_layer: QgsVectorLayer, 
                                   block_id: str) -> bool:
@@ -72,13 +75,16 @@ def do_reblock(parcel_geom, building_list: List, block_geom=None):
 
     TO-DO: does not include weighting of parcel 
     '''
+    print('Creating planar graph...')
     planar_graph = PlanarGraph.multilinestring_to_planar_graph(parcel_geom)
+    print('...planar graph created!')
 
     # Update the edge weight
     if block_geom is not None:
         building_list = add_outside_node(block_geom, building_list)
         missing, total_block_coords = i_topology_utils.update_edge_types(planar_graph, block_geom, check=True)
 
+    print('Starting optimal path estimation...')
     new_steiner, existing_steiner, terminal_points, summary = get_optimal_path(planar_graph, building_list, simplify=True, verbose=True)
     return new_steiner, existing_steiner
 
@@ -219,7 +225,7 @@ def make_qgis_reblock_layers(building_layer: QgsVectorLayer, parcel_layer: QgsVe
     #existing_steiner_layer = shapely_geom_to_layer(new_steiner, "Existing_roads")
 
 
-
+# SLE.4.2.1_1_1632
 
 # import sys 
 # sys.path.insert(0, "/home/cooper/Documents/chicago_urban/mnp/prclz-proto/prclz")
