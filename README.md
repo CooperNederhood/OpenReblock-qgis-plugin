@@ -34,3 +34,5 @@ Finally, we need parcel lines dividing each building. These parcel boundaries wi
 
 ![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/s2_parcel_data.png "Title")
 
+## Perform reblocking
+We are now ready to do a reblocking example.
