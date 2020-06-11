@@ -1,5 +1,5 @@
 # OpenReblock-qgis-plugin
-QGIS3 plugin of reblocking utilities 
+QGIS3 plugin of reblocking utilities illustrated as part of the Million Neighborhoods Project. The main project website can be found here: https://millionneighborhoods.org/#2/8.84/17.54
 
 # Initial Setup
 **1. Install QGIS**
