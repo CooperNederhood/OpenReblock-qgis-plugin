@@ -36,3 +36,24 @@ Finally, we need parcel lines dividing each building. These parcel boundaries wi
 
 ## Perform reblocking
 We are now ready to do a reblocking example.
+
+The reblocking of each block is independent of other blocks. The plugin can reblock all blocks in the data layer or the user can choose to reblock only a given block. The reblocking algorithm is computationally intensive, and was originally run on a university compute cluster. So it will probably be best to start by reblocking smaller blocks and proceed to larger ones. We begin with one block which has "block_id" of "SLE.4.2.1_1_517".
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_0.png "Title")
+
+Now, we navigate to Open Reblock via "Vector" >> "Open reblock" >> "Perform reblocking". This brings up the Open Reblock inputs dialogue. Below we can see that we have populated the various data layers and input the "block_id" of the block we want to process. If you leave this as "All" it will reblock everything, which may freeze your computer if you have too much data for your machine. The reblocking algorithm will estimate new streets from within the set of parcel boundaries and save those out as a new layer in your QGIS session.
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_1.png "Title")
+
+Don't be worried if the reblocking causes your computer to freeze momentarily. Below, we show the original street network and, in red, we show the proposed additional streets via Open Reblock.
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_2.png "Title")
+
+Let's bring the building footprints back in, and you can see that buildings which previously had no direct street access now have direct access under the Open Reblock road proposals.
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_3.png "Title")
+
+
+
+
+
