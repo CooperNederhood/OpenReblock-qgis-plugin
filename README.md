@@ -36,3 +36,17 @@ Finally, we need parcel lines dividing each building. These parcel boundaries wi
 
 ## Perform reblocking
 We are now ready to do a reblocking example.
+
+The reblocking of each block is independent of other blocks. The plugin can reblock all blocks in the data layer or the user can choose to reblock only a given block. The reblocking algorithm is computationally intensive, and was originally run on a university compute cluster. So it will probably be best to start by reblocking smaller blocks and proceed to larger ones. We begin with one block which has "block_id" of "SLE.4.2.1_1_517".
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_0.png "Title")
+
+Now, we navigate to Open Reblock via "Vector" >> "Open reblock" >> "Perform reblocking". This brings up the Open Reblock inputs dialogue.
+
+![Alt text](https://github.com/CooperNederhood/OpenReblock-qgis-plugin/blob/master/how_to/reblock_1.png "Title")
+
+
+
+
+
+
