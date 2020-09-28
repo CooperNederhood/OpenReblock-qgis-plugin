@@ -5,10 +5,13 @@ QGIS3 plugin of reblocking utilities illustrated as part of the Million Neighbor
 **1. Install QGIS**
 https://www.qgis.org/en/site/forusers/alldownloads.html
 
-**2. Install Open Reblock plugin**
+**2. Enable "Experimental plugins"**
+Open Plugin Manager by Plugins ‣ Manage and Install Plugins.... Click on the Settings tab. You will see an option called Show also experimental plugins. Click the checkbox next to it, to enable it. 
+
+**3. Install Open Reblock plugin**
 In QGIS, open the plugin manager via: "Plugins" >> "Manage and Install Plugins..."
 
-Next, searching for "reblock" should return the Open Reblock plugin. Install!
+Next, searching for "reblock" should return the Open Reblock plugin. This plugin is still experimental, so if you don't do step 2 you won't see it. Install!
 
 # Reblocking Walkthrough
 
